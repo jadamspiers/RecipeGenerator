@@ -95,27 +95,27 @@ def recipe_to_string(recipe):
 
 
 
+if __name__ == "__main__":
 
+    ################## TEST FUNCTIONS ###################
 
-################## TEST FUNCTIONS ###################
+    # get raw dataset
+    dataset_raw = load_dataset()  
+    print('Total number of raw examples: ', len(dataset_raw))
 
-# get raw dataset
-dataset_raw = load_dataset()  
-print('Total number of raw examples: ', len(dataset_raw))
+    # remove invalid recipes
+    dataset_validated = [recipe for recipe in dataset_raw if clean_recipe(recipe)]
+    print('Dataset size BEFORE validation', len(dataset_raw))
+    print('Dataset size AFTER validation', len(dataset_validated))
+    print('Number of invalid recipes', len(dataset_raw) - len(dataset_validated))
 
-# remove invalid recipes
-dataset_validated = [recipe for recipe in dataset_raw if clean_recipe(recipe)]
-print('Dataset size BEFORE validation', len(dataset_raw))
-print('Dataset size AFTER validation', len(dataset_validated))
-print('Number of invalid recipes', len(dataset_raw) - len(dataset_validated))
+    # convert the recipes from json object to string
+    dataset_stringified = [recipe_to_string(recipe) for recipe in dataset_validated]
+    print('Stringified dataset size: ', len(dataset_stringified))
 
-# convert the recipes from json object to string
-dataset_stringified = [recipe_to_string(recipe) for recipe in dataset_validated]
-print('Stringified dataset size: ', len(dataset_stringified))
+    for recipe_index, recipe_string in enumerate(dataset_stringified[:10]):
+        print('Recipe #{}\n---------'.format(recipe_index + 1))
+        print(recipe_string)
+        print('\n')
 
-for recipe_index, recipe_string in enumerate(dataset_stringified[:10]):
-    print('Recipe #{}\n---------'.format(recipe_index + 1))
-    print(recipe_string)
-    print('\n')
-
-print(dataset_stringified[200]) # example recipe string output
+    print(dataset_stringified[200]) # example recipe string output
