@@ -111,8 +111,8 @@ for recipe in dataset:
 
 #correlation matrix
 print("Building Correlation Matrix")
-print(df.head())
 df = df.fillna(0)
+print(df.head())
 corrmat = df.corr()
 shortkeys = list(plotfreqdict.keys())[:5]
 print("Correlation matrix:")
