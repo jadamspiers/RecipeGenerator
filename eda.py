@@ -1,13 +1,18 @@
 import matplotlib.pyplot as plt
 import sys
 import get_recipes 
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_samples, silhouette_score
+import pandas as pd
+#program to do basic analysis on the data set and report results to the command line or using graphs
+
 # get raw dataset
 dataset_raw = get_recipes.load_dataset(silent=True)
 
+#clean/validate dataset
 dataset = [recipe for recipe in dataset_raw if get_recipes.clean_recipe(recipe)]
 
-#clear up room in memory 
-dataset_raw = None
 
 #for stripping out quantity information
 cutlist = ["ounces", "ounce", "pounds", "pound", "lbs", "lb", "tsp", "teaspoons", "teaspoon", 
@@ -17,9 +22,16 @@ cutlist = ["ounces", "ounce", "pounds", "pound", "lbs", "lb", "tsp", "teaspoons"
 ingredientlist = []
 ingrednumlist = []
 freqdict = {}
+df = pd.DataFrame()
+
+#debug paramters
 i = 0
-pint = 100
+pint = 1000
+printout = False
 debug = False
+
+#pull data from dataset
+print("Analyzing Data")
 for recipe in dataset:
 	#each ingredient is a string 
 	recipeingred = []
@@ -68,38 +80,43 @@ for recipe in dataset:
 		ingredient = ingredient.replace("to taste", '')
 		ingredient = ingredient.replace("for garnish", '')
 		ingredient = ingredient.replace(' or ', ' ') #remove cases such as "can or bottle"
-
+		ingredient = ingredient.replace('eggs', 'egg') #singularize eggs
 		
-
-
+		#pull ingredients out of cleaned string 
 		ingredsplstr = [word for word in ingredient.split() if not word  in cutlist 
 		and not	'/' in word #fractions
 		and not word.isnumeric() ] #numbers
 		
-		#for word in ingredient.split():
-		#	if not word in cutlist
+		#coallate ingredient words into one thing
 		ingredstr = ' '.join(ingredsplstr).lower()
 
 		#keep track of ingredients in each recipe
 		recipeingred.append(ingredstr)
 
+		#build dataframe for correlation mat
+		df.loc[i, ingredstr ]= 1
 		#keep track of overall ingredient frequency
 		if not ingredstr in freqdict.keys():
 			freqdict[ingredstr] = 1
 		else:
 			freqdict[ingredstr] += 1 
 
-		#print(ingredstr)
 	ingredientlist.append(recipeingred)
 	ingrednumlist.append(len(recipeingred))
+	
 	#debug
-	#if i % pint == 0:
-	#	print("Iteration: " + str(i))
-	#	print("Size of ingredientlist: " + str(sys.getsizeof(ingredientlist)))
-	#	print("Size of Ingrednumlist: " + str(sys.getsizeof(ingrednumlist)))
-	#	print("Size of Freqdict: " + str(sys.getsizeof(freqdict)))
+	if i % pint == 0 and printout:
+		print("Iteration: " + str(i))
 	i+= 1
-#print(ingredientlist)
+
+#correlation matrix
+print("Building Correlation Matrix")
+print(df.head())
+df = df.fillna(0)
+corrmat = df.corr()
+shortkeys = list(plotfreqdict.keys())[:5]
+print("Correlation matrix:")
+print(corrmat.loc[shortkeys,shortkeys])
 
 freqdict = dict(sorted(freqdict.items(), key=lambda x: x[1], reverse=True))
 
@@ -111,8 +128,28 @@ for key, value in freqdict.items():
 		plotfreqdict[key] = value
 	else:
 		break
-#print(freqdict)
-#print(plotfreqdict)
+
+#kmeans 
+#transform ingredient list to usable form
+print("Performing K Means Analysis")
+ingredientlistvectorizable = [' '.join(x) for x in ingredientlist]
+vectorizer = CountVectorizer( vocabulary = freqdict.keys())
+X = vectorizer.fit_transform(ingredientlistvectorizable)
+
+#check silhoutte score to pick k
+clusters = [2, 3, 4, 5, 6]
+silscore = []
+for k in clusters:
+	kmeans = KMeans(n_clusters = k)
+	labels = kmeans.fit_predict(X)
+	silscore.append(silhouette_score(X, labels))
+
+#plot silhouetter results
+plt.figure()
+plt.plot(clusters, silscore)
+plt.xlabel("Number of Clusters")
+plt.ylabel("Average Silhouette Score")
+plt.title("K Means Clustering Analysis")
 
 #freq plot of type of ingredients 
 x = range(len(plotfreqdict))
@@ -120,7 +157,6 @@ y = list(plotfreqdict.values())
 freqtot = sum(y)
 for i in range(len(y)):
 	y[i] = y[i]/freqtot
-
 plt.figure()
 plt.bar(x, y)
 plt.xticks(x, plotfreqdict.keys(), rotation='vertical')
@@ -132,7 +168,6 @@ plt.figure()
 plt.hist(ingrednumlist,  density=True)
 plt.xlabel("Number of Ingredients")
 plt.ylabel("Frequency")
-plt.title("Ingredients per Recipe")
-#pick broad class of ingredients and compare correlation matrix
+plt.title("Ingredients Per Recipe")
 
 plt.show()
