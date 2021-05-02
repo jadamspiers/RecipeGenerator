@@ -27,7 +27,7 @@ df = pd.DataFrame()
 #debug paramters
 i = 0
 pint = 1000
-printout = False
+printout = True
 debug = False
 
 #pull data from dataset
@@ -109,6 +109,16 @@ for recipe in dataset:
 		print("Iteration: " + str(i))
 	i+= 1
 
+
+#extract n most common keys for plotting
+n = 50
+plotfreqdict = {}
+for key, value in freqdict.items():
+	if len(plotfreqdict) < n:
+		plotfreqdict[key] = value
+	else:
+		break
+
 #correlation matrix
 print("Building Correlation Matrix")
 df = df.fillna(0)
@@ -119,15 +129,6 @@ print("Correlation matrix:")
 print(corrmat.loc[shortkeys,shortkeys])
 
 freqdict = dict(sorted(freqdict.items(), key=lambda x: x[1], reverse=True))
-
-#extract n most common keys for plotting
-n = 50
-plotfreqdict = {}
-for key, value in freqdict.items():
-	if len(plotfreqdict) < n:
-		plotfreqdict[key] = value
-	else:
-		break
 
 #kmeans 
 #transform ingredient list to usable form
